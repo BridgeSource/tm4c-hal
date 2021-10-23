@@ -26,6 +26,24 @@ pub enum Event {
     TimeOut,
 }
 
+/// Configuration options for initializing the timer
+pub struct TimerConfig {
+    /// Output trigger enable for timer A
+    pub output_trigger_a: bool,
+    /// Output trigger enable for timer B
+    pub output_trigger_b: bool,
+}
+
+impl TimerConfig {
+    /// Create a default timer configuration
+    pub fn default() -> Self {
+        TimerConfig {
+            output_trigger_a: false,
+            output_trigger_b: false,
+        }
+    }
+}
+
 macro_rules! hal {
     ($($TIM:ident: ($tim:ident, $powerDomain:ident),)+) => {
         $(
@@ -76,6 +94,7 @@ macro_rules! hal {
                 pub fn $tim<T>(tim: $TIM, timeout: T,
                                pc: &sysctl::PowerControl,
                                clocks: &Clocks,
+                               config: &TimerConfig,
                 ) -> Self
                 where
                     T: Into<Hertz>,
@@ -92,6 +111,12 @@ macro_rules! hal {
                                   .tben().clear_bit()
                                   .tastall().set_bit()
                     );
+                    if config.output_trigger_a {
+                        tim.ctl.write(|w| w.taote().set_bit());
+                    }
+                    if config.output_trigger_b {
+                        tim.ctl.write(|w| w.tbote().set_bit());
+                    }
 
                     // GPTMCFG = 0x0 (chained - 2x16 = 32bits) This
                     // will not force 32bits wide timer, this will
