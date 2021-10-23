@@ -203,4 +203,12 @@ pub enum InterruptMode {
     Disabled,
 }
 
+/// Set a GPIO pin to analog
+pub trait AnalogMode {}
+/// Analog Input
+pub struct AnalogInput {}
+impl AnalogMode for AnalogInput {}
+impl InputMode for AnalogInput {}
+impl IsUnlocked for AnalogInput {}
+
 // End of file
