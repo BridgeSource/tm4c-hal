@@ -33,10 +33,11 @@
 //! ```
 
 pub use tm4c_hal::gpio::*;
+use void::Void;
 
 use crate::{
     bb,
-    hal::digital::{InputPin, OutputPin, StatefulOutputPin},
+    hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin},
     sysctl,
 };
 use core::marker::PhantomData;

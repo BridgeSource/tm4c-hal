@@ -65,36 +65,43 @@ macro_rules! gpio_macro {
             }
 
             impl<MODE> StatefulOutputPin for $PXx<Output<MODE>> where MODE: OutputMode {
-                fn is_set_high(&self) -> bool {
+                fn is_set_high(&self) -> Result<bool, Self::Error> {
                     let p = unsafe { &*$GPIOX::ptr() };
-                    bb::read_bit(&p.data, self.i)
+                    Ok(bb::read_bit(&p.data, self.i))
+
                 }
 
-                fn is_set_low(&self) -> bool {
-                    !self.is_set_high()
+                fn is_set_low(&self) -> Result<bool, Self::Error> {
+                    Ok(!self.is_set_high()?)
                 }
             }
 
             impl<MODE> OutputPin for $PXx<Output<MODE>> where MODE: OutputMode {
-                fn set_high(&mut self) {
+                type Error = Void;
+
+                fn set_high(&mut self) -> Result<(), Self::Error> {
                     let p = unsafe { &*$GPIOX::ptr() };
                     unsafe { bb::change_bit(&p.data, self.i, true); }
+                    Ok(())
                 }
 
-                fn set_low(&mut self) {
+                fn set_low(&mut self) -> Result<(), Self::Error> {
                     let p = unsafe { &*$GPIOX::ptr() };
                     unsafe { bb::change_bit(&p.data, self.i, false); }
+                    Ok(())
                 }
             }
 
             impl<MODE> InputPin for $PXx<Input<MODE>> where MODE: InputMode {
-                fn is_high(&self) -> bool {
+                type Error = Void;
+
+                fn is_high(&self) -> Result<bool, Self::Error> {
                     let p = unsafe { &*$GPIOX::ptr() };
-                    bb::read_bit(&p.data, self.i)
+                    Ok(bb::read_bit(&p.data, self.i))
                 }
 
-                fn is_low(&self) -> bool {
-                    !self.is_high()
+                fn is_low(&self) -> Result<bool, Self::Error> {
+                    Ok(!self.is_high()?)
                 }
             }
 
@@ -391,36 +398,42 @@ macro_rules! gpio_macro {
                 }
 
                 impl<MODE> StatefulOutputPin for $PXi<Output<MODE>> where MODE: OutputMode {
-                    fn is_set_high(&self) -> bool {
+                    fn is_set_high(&self) -> Result<bool, Self::Error> {
                         let p = unsafe { &*$GPIOX::ptr() };
-                        bb::read_bit(&p.data, $i)
+                        Ok(bb::read_bit(&p.data, $i))
                     }
 
-                    fn is_set_low(&self) -> bool {
-                        !self.is_set_high()
+                    fn is_set_low(&self) -> Result<bool, Self::Error> {
+                        Ok(!self.is_set_high()?)
                     }
                 }
 
                 impl<MODE> OutputPin for $PXi<Output<MODE>> where MODE: OutputMode {
-                    fn set_high(&mut self) {
+                    type Error = Void;
+
+                    fn set_high(&mut self) -> Result<(), Self::Error> {
                         let p = unsafe { &*$GPIOX::ptr() };
                         unsafe { bb::change_bit(&p.data, $i, true); }
+                        Ok(())
                     }
 
-                    fn set_low(&mut self) {
+                    fn set_low(&mut self) -> Result<(), Self::Error> {
                         let p = unsafe { &*$GPIOX::ptr() };
                         unsafe { bb::change_bit(&p.data, $i, false); }
+                        Ok(())
                     }
                 }
 
                 impl<MODE> InputPin for $PXi<Input<MODE>> where MODE: InputMode {
-                    fn is_high(&self) -> bool {
+                    type Error = Void;
+
+                    fn is_high(&self) -> Result<bool, Self::Error> {
                         let p = unsafe { &*$GPIOX::ptr() };
-                        bb::read_bit(&p.data, $i)
+                        Ok(bb::read_bit(&p.data, $i))
                     }
 
-                    fn is_low(&self) -> bool {
-                        !self.is_high()
+                    fn is_low(&self) -> Result<bool, Self::Error> {
+                        Ok(!self.is_high()?)
                     }
                 }
 
