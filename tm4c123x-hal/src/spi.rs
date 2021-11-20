@@ -71,6 +71,22 @@ macro_rules! busy_wait {
     };
 }
 
+/// Word size configuration
+#[derive(Copy,Clone)]
+pub enum SpiWordSize {
+    /// 8-bit word
+    _8,
+    /// 16-bit word
+    _16,
+}
+
+/// Configuration options for SPI
+#[derive(Copy,Clone)]
+pub struct SpiConfig {
+    /// Word size configuration
+    pub word_size: SpiWordSize,
+}
+
 macro_rules! hal {
     ($($SPIX:ident: ($powerDomain:ident, $spiX:ident),)+) => {
         $(
@@ -81,6 +97,7 @@ macro_rules! hal {
                     pins: (SCK, MISO, MOSI),
                     mode: Mode,
                     freq: F,
+                    config: &SpiConfig,
                     clocks: &Clocks,
                     pc: &sysctl::PowerControl,
                 ) -> Self
@@ -134,9 +151,12 @@ macro_rules! hal {
                         w.spo().bit(mode.polarity == Polarity::IdleHigh)
                             .sph().bit(mode.phase == Phase::CaptureOnSecondTransition)
                             .frf().moto()
-                            .dss()._8()
                             .scr().bits(scr)
                     });
+                    match config.word_size {
+                        SpiWordSize::_8 => spi.cr0.modify(|_, w| w.dss()._8()),
+                        SpiWordSize::_16 => spi.cr0.modify(|_, w| w.dss()._16()),
+                    }
 
                     // Enable peripheral
                     spi.cr1.write(|w| w.sse().set_bit());
@@ -211,9 +231,40 @@ macro_rules! hal {
                 }
             }
 
+            impl<PINS> FullDuplex<u16> for Spi<$SPIX, PINS> {
+                type Error = Error;
+
+                fn read(&mut self) -> nb::Result<u16, Error> {
+                    // Receive FIFO Not Empty
+                    if self.spi.sr.read().rne().bit_is_clear() {
+                        Err(nb::Error::WouldBlock)
+                    } else {
+                        let r = self.spi.dr.read().data().bits() as u16;
+                        Ok(r)
+                    }
+                }
+
+                fn send(&mut self, byte: u16) -> nb::Result<(), Error> {
+                    // Transmit FIFO Not Full
+                    if self.spi.sr.read().tnf().bit_is_clear() {
+                        Err(nb::Error::WouldBlock)
+                    } else {
+                        self.spi.dr.write(|w| unsafe {
+                            w.data().bits(byte.into())
+                        });
+                        busy_wait!(self.spi, bsy, bit_is_clear);
+                        Ok(())
+                    }
+                }
+            }
+
             impl<PINS> crate::hal::blocking::spi::transfer::Default<u8> for Spi<$SPIX, PINS> {}
 
             impl<PINS> crate::hal::blocking::spi::write::Default<u8> for Spi<$SPIX, PINS> {}
+
+            impl<PINS> crate::hal::blocking::spi::transfer::Default<u16> for Spi<$SPIX, PINS> {}
+
+            impl<PINS> crate::hal::blocking::spi::write::Default<u16> for Spi<$SPIX, PINS> {}
         )+
     }
 }
